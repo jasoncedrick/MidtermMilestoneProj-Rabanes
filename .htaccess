@@ -1,0 +1,10 @@
+Options -Indexes
+
+# SQL and project notes are for installation, not public downloads.
+<FilesMatch "\.(sql|md)$">
+    Require all denied
+</FilesMatch>
+
+# Protect configuration, class definitions and shared includes.
+RewriteEngine On
+RewriteRule ^(config|classes|includes)(/|$) - [F,L,NC]
