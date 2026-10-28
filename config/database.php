@@ -1,4 +1,11 @@
 <?php
+/*
+ * DATABASE CONNECTION
+ * Create the shared PDO object passed into User, Recipe and Comment.
+ * Exceptions report query failures; associative fetching returns named columns;
+ * native prepared statements keep bound values separate from SQL. Store times in UTC.
+ * Study navigation: see README.md in the repository root.
+ */
 // This is the only file that opens a database connection.
 // Default settings for MySQL/MariaDB in XAMPP on Windows.
 $host = '127.0.0.1';
@@ -6,6 +13,7 @@ $dbname = 'kusina_barangay';
 $username = 'root';
 $password = '';
 
+// Open one connection for this request; every model reuses this PDO instance.
 try {
     $pdo = new PDO(
         "mysql:host=$host;dbname=$dbname;charset=utf8mb4",

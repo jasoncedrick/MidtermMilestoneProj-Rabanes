@@ -1,4 +1,11 @@
 <?php
+/*
+ * RECIPE DETAILS AND COMMENTS
+ * The URL id selects one recipe. GET displays it; POST adds or deletes a comment.
+ * The logged-in user ID comes from the session, not from a form field.
+ * Read next: classes/Recipe.php and classes/Comment.php for database operations.
+ * Study navigation: see README.md in the repository root.
+ */
 require 'includes/functions.php';
 requireLogin();
 
@@ -6,6 +13,7 @@ $userId = (int) $_SESSION['user_id'];
 $recipeId = id($_GET['id'] ?? 0);
 $recipeModel = new Recipe($pdo);
 $commentModel = new Comment($pdo);
+// find() returns a recipe plus author, category and whether this user saved it.
 $recipe = $recipeModel->find($recipeId, $userId);
 if (!$recipe) {
     showError('Recipe not found.', 404);
@@ -13,9 +21,11 @@ if (!$recipe) {
 
 $errors = [];
 $body = '';
+// Handle changes before rendering HTML so a successful POST can redirect safely.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkToken();
     $action = text($_POST, 'action');
+// Use an explicit action field to distinguish add-comment and delete-comment requests.
     if ($action === 'add_comment') {
         $body = text($_POST, 'body');
         if (!validLength($body, 2, 1000)) {
@@ -37,6 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Load ordered ingredients and author-enriched comments after processing the request.
 $ingredients = $recipeModel->ingredients($recipeId);
 $comments = $commentModel->all($recipeId);
 $pageTitle = $recipe['title'];
@@ -55,6 +66,7 @@ require 'includes/header.php';
             <time datetime="<?= e(str_replace(' ', 'T', $recipe['created_at']) . 'Z') ?>">
                 <?= e(postedDate($recipe['created_at'])) ?>
             </time>
+            <!-- Edited is an indicator, not edit history or the displayed last-edit time. -->
             <?php if ($recipe['updated_at']): ?><span> · Edited</span><?php endif; ?>
         </p>
         <div class="actions">
@@ -64,6 +76,7 @@ require 'includes/header.php';
                     data-title="<?= e($recipe['title']) ?>">
                 <?= $recipe['saved'] ? 'Saved' : 'Save recipe' ?>
             </button>
+            <!-- Only the owner sees edit/delete controls; server-side checks enforce the same rule. -->
             <?php if ((int) $recipe['user_id'] === $userId): ?>
                 <a href="recipe_form.php?id=<?= $recipeId ?>">Edit recipe</a>
                 <form action="delete_recipe.php" method="post" data-confirm="Delete this recipe and its comments? This cannot be undone.">
@@ -111,6 +124,7 @@ require 'includes/header.php';
     <?php if (!$comments): ?>
         <p class="hint">No comments yet.</p>
     <?php endif; ?>
+    <!-- Render each comment, its author and optional Edited marker; owners also get edit/delete controls. -->
     <?php foreach ($comments as $comment): ?>
         <article class="comment">
             <header>

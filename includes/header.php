@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+<?php /* SHARED PAGE HEADER: renders the document head, navigation and opening main element.
+Uses pageTitle/activeNav supplied by each page. Exposes the CSRF token to JavaScript,
+escapes dynamic text, and displays then removes the one-time session message. */ ?><!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">

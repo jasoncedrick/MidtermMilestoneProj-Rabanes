@@ -1,4 +1,11 @@
 <?php
+/*
+ * SHARED BOOTSTRAP AND HELPERS
+ * Runs before page HTML: configure/start the session, send response headers,
+ * load the PDO connection and model classes, then define reusable helpers.
+ * Controllers use these helpers for validation, login, CSRF checks and safe output.
+ * Study navigation: see README.md in the repository root.
+ */
 // Shared setup. Every page includes this file before displaying HTML.
 session_set_cookie_params([
     'httponly' => true,
@@ -17,16 +24,19 @@ require_once __DIR__ . '/../classes/Recipe.php';
 require_once __DIR__ . '/../classes/Comment.php';
 
 // Safe text output. Use e() whenever displaying text from a member.
+// Escape text at HTML output time to prevent supplied markup from becoming executable HTML.
 function e($value)
 {
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+// Read only a string from an input array and trim surrounding whitespace; otherwise return empty text.
 function text($data, $key)
 {
     return isset($data[$key]) && is_string($data[$key]) ? trim($data[$key]) : '';
 }
 
+// Accept a positive integer ID; invalid values become 0, which controllers treat as missing/invalid.
 function id($value)
 {
     if (!is_scalar($value)) {
@@ -35,12 +45,14 @@ function id($value)
     return (int) (filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 0);
 }
 
+// Send HTTP 303 and stop execution. After POST, the next page is requested with GET.
 function redirect($page)
 {
     header('Location: ' . $page, true, 303);
     exit;
 }
 
+// Authentication guard: redirect visitors who have no logged-in session user ID.
 function requireLogin()
 {
     if (empty($_SESSION['user_id'])) {
@@ -48,6 +60,7 @@ function requireLogin()
     }
 }
 
+// Regenerate the session ID to prevent session fixation and issue a fresh CSRF token.
 function loginMember($user)
 {
     session_regenerate_id(true);
@@ -59,6 +72,7 @@ function loginMember($user)
 }
 
 // A CSRF token protects every form that changes data.
+// Create a random session token once; reuse it in forms belonging to this session.
 function csrfToken()
 {
     if (empty($_SESSION['csrf'])) {
@@ -67,16 +81,19 @@ function csrfToken()
     return $_SESSION['csrf'];
 }
 
+// Return an escaped hidden input that submits the session token with a form.
 function csrfField()
 {
     return '<input type="hidden" name="csrf" value="' . e(csrfToken()) . '">';
 }
 
+// Compare the submitted CSRF token with the session token using hash_equals().
 function validToken()
 {
     return isset($_SESSION['csrf']) && hash_equals($_SESSION['csrf'], text($_POST, 'csrf'));
 }
 
+// Reject a missing/wrong token with 403 before a modifying form is processed.
 function checkToken()
 {
     if (!validToken()) {
@@ -84,11 +101,13 @@ function checkToken()
     }
 }
 
+// Store a one-time message; header.php displays and removes it on the next page.
 function flash($message)
 {
     $_SESSION['message'] = $message;
 }
 
+// Set an HTTP error status, render a friendly shared-layout page, then stop.
 function showError($message, $status)
 {
     http_response_code($status);
@@ -100,6 +119,7 @@ function showError($message, $status)
     exit;
 }
 
+// Display the collected validation errors. Escape each message before output.
 function showErrors($errors)
 {
     if (!$errors) {
@@ -112,12 +132,14 @@ function showErrors($errors)
     echo '</ul></section>';
 }
 
+// Count UTF-8 characters and require an inclusive minimum/maximum length.
 function validLength($value, $min, $max)
 {
     $length = mb_strlen($value, 'UTF-8');
     return $length >= $min && $length <= $max;
 }
 
+// Interpret database times as UTC, convert to Manila time, and show the posting date.
 function postedDate($value)
 {
     $date = new DateTime($value, new DateTimeZone('UTC'));
@@ -125,6 +147,8 @@ function postedDate($value)
     return $date->format('M j, Y');
 }
 
+// Collect all field errors: lengths, real category, minutes, ingredient count/items, steps.
+// Return an empty array when valid; callers must check this before saving.
 function validateRecipe($data, $categories)
 {
     $errors = [];

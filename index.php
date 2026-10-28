@@ -1,14 +1,23 @@
 <?php
+/*
+ * RECIPE LIST PAGE
+ * Loads the shared setup, requires login, reads GET filters, and asks Recipe::all()
+ * for matching rows. The HTML loops through those rows to create recipe cards.
+ * Read next: classes/Recipe.php for SQL; assets/script.js for Save buttons.
+ * Study navigation: see README.md in the repository root.
+ */
 require 'includes/functions.php';
 requireLogin();
 
 $recipeModel = new Recipe($pdo);
 $categories = $recipeModel->categories();
 
+// GET parameters keep searches bookmarkable. Normalize and limit text before querying.
 $search = mb_substr(text($_GET, 'search'), 0, 100);
 $category = id($_GET['category'] ?? 0);
 $minutes = id($_GET['minutes'] ?? 0);
 
+// Only the three supported cooking-time filters are accepted; other values mean no limit.
 if (!in_array($minutes, [15, 30, 60], true)) {
     $minutes = 0;
 }
@@ -19,6 +28,7 @@ if (!in_array($view, ['all', 'mine', 'favorites'], true)) {
     $view = 'all';
 }
 
+// Pass all active filters to the model. It combines filters with AND and orders newest first.
 $recipes = $recipeModel->all(
     (int) $_SESSION['user_id'],
     $search,
@@ -56,6 +66,7 @@ require 'includes/header.php';
         <a class="button" href="recipe_form.php">Share a recipe</a>
     </header>
 
+    <!-- GET search preserves filters in the URL; selected/value attributes repopulate the form. -->
     <form method="get" class="panel filters" role="search">
         <input type="hidden" name="view" value="<?= e($view) ?>">
 
@@ -122,6 +133,7 @@ require 'includes/header.php';
 
     <div class="recipe-grid" data-view="<?= e($view) ?>">
 
+        <!-- One article is rendered for each result row. e() escapes user-supplied text. -->
         <?php foreach ($recipes as $recipe): ?>
             <article class="panel recipe-card">
 
@@ -159,6 +171,7 @@ require 'includes/header.php';
                             <?= e(postedDate($recipe['created_at'])) ?>
                         </time>
 
+                        <!-- A non-null update timestamp shows Edited; the date beside it remains created_at. -->
                         <?php if ($recipe['updated_at']): ?>
                             <span> · Edited</span>
                         <?php endif; ?>
