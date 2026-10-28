@@ -1,3 +1,8 @@
+/* PRESENTATION ONLY
+ * Shared layout, forms, recipe cards and responsive styling. Class names are
+ * used by the PHP templates; validation and permissions live in JS/PHP.
+ * Study navigation: ../README.md.
+ */
 /* Theme: charcoal, orange and warm white. */
 :root {
     --accent: #c44715;

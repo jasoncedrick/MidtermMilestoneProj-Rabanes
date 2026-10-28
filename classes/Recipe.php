@@ -1,19 +1,30 @@
 <?php
+/*
+ * RECIPE MODEL
+ * Contains recipe, ingredient and favorite queries. Controllers validate input
+ * before save(); the model also checks ownership for edits and deletes.
+ * Recipe and ingredient writes share a transaction so partial saves roll back.
+ * Study navigation: see README.md in the repository root.
+ */
 // Recipes, ingredient rows and favorites belong together in this small app.
 class Recipe
 {
     private $db;
 
+    // Keep the shared PDO connection; do not open a separate connection per query.
     public function __construct($pdo)
     {
         $this->db = $pdo;
     }
 
+    // Load seeded category choices in ID order.
     public function categories()
     {
         return $this->db->query('SELECT * FROM categories ORDER BY id')->fetchAll();
     }
 
+    // Build a parameterized query with optional filters. JOIN supplies author/category names;
+    // EXISTS computes saved state for this specific user without duplicating recipe rows.
     public function all($userId, $search, $category, $minutes, $view)
     {
         $sql = 'SELECT r.*, u.name AS author, c.name AS category,
@@ -55,6 +66,7 @@ class Recipe
         return $statement->fetchAll();
     }
 
+    // Fetch one recipe with display names and this user's saved state. This read does not require ownership.
     public function find($id, $userId)
     {
         $statement = $this->db->prepare(
@@ -70,6 +82,7 @@ class Recipe
         return $statement->fetch();
     }
 
+    // Read ingredient text in stored position order as a simple array of strings.
     public function ingredients($recipeId)
     {
         $statement = $this->db->prepare(
@@ -79,6 +92,8 @@ class Recipe
         return $statement->fetchAll(PDO::FETCH_COLUMN);
     }
 
+    // Create when id=0; update an existing owned recipe when id>0.
+    // The controller validates data; this transaction saves the recipe and all ingredient rows together.
     public function save($data, $userId, $id = 0)
     {
         // Check ownership again here, even though the page already checks it.
@@ -130,6 +145,7 @@ class Recipe
         }
     }
 
+    // Delete only an owned recipe. Database foreign keys remove dependent rows by cascade.
     public function delete($id, $userId)
     {
         $statement = $this->db->prepare('DELETE FROM recipes WHERE id = ? AND user_id = ?');
@@ -137,6 +153,8 @@ class Recipe
         return $statement->rowCount() === 1;
     }
 
+    // Insert the desired saved relationship or remove it.
+    // The composite primary key prevents duplicate (user_id, recipe_id) pairs.
     public function setFavorite($recipeId, $userId, $saved)
     {
         if ($saved) {

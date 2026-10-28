@@ -1,4 +1,11 @@
 <?php
+/*
+ * LOGIN PAGE
+ * GET displays the form. POST validates the CSRF token and checks credentials
+ * through User::login(). A successful login regenerates the session ID, stores
+ * the member identity, and redirects to index.php. Invalid credentials show an error.
+ * Study navigation: see README.md in the repository root.
+ */
 require 'includes/functions.php';
 if (!empty($_SESSION['user_id'])) {
     redirect('index.php');
@@ -6,6 +13,7 @@ if (!empty($_SESSION['user_id'])) {
 
 $errors = [];
 $email = '';
+// A GET only displays the form; credentials are processed on POST.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkToken();
     $email = strtolower(text($_POST, 'email'));
@@ -15,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (filter_var($email, FILTER_VALIDATE_EMAIL) && strlen($password) <= 72 && !str_contains($password, "\0")) {
         $member = $user->login($email, $password);
     }
+// A matching password returns the member row; false follows the generic error path.
     if ($member) {
         loginMember($member);
         redirect('index.php');
@@ -30,6 +39,7 @@ require 'includes/header.php';
     <p>Sign in to browse and share recipes with your neighbors.</p>
     <?php showErrors($errors); ?>
 
+    <!-- POST sends credentials in the request body. The hidden CSRF field is verified before login. -->
     <form method="post" class="form-stack">
         <?= csrfField() ?>
         <label for="email">Email address</label>

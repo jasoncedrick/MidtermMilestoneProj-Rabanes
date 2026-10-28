@@ -1,3 +1,8 @@
+/* BROWSER INTERACTIONS
+ * Runs after HTML parsing (defer in header.php). Each section checks for its
+ * page-specific elements. Browser checks improve feedback; PHP enforces rules.
+ * Study map: ../README.md. Favorites call ../favorite.php and receive JSON.
+ */
 // 1. Confirm destructive actions before submitting their forms.
 document.querySelectorAll('form[data-confirm]').forEach(function (form) {
     form.addEventListener('submit', function (event) {
@@ -11,6 +16,7 @@ document.querySelectorAll('form[data-confirm]').forEach(function (form) {
 const ingredientList = document.getElementById('ingredients');
 const addButton = document.getElementById('add-ingredient');
 
+// Keep ingredient labels, accessible remove labels and the 1..40 row controls in sync.
 function numberIngredients() {
     const rows = ingredientList.querySelectorAll('.ingredient-row');
     rows.forEach(function (row, index) {
@@ -55,6 +61,8 @@ function showFeedback(message) {
     feedbackTimer = setTimeout(function () { feedback.hidden = true; }, 5000);
 }
 
+// Send the intended saved state plus CSRF token. Update UI only after a successful JSON response.
+// A disabled button prevents repeated clicks while a request is pending; finally re-enables it.
 document.querySelectorAll('.favorite-button').forEach(function (button) {
     button.addEventListener('click', async function () {
         if (button.disabled) return;
@@ -99,6 +107,7 @@ document.querySelectorAll('.favorite-button').forEach(function (button) {
 
 // 4. Check trimmed text lengths and password confirmation in the browser.
 // PHP repeats the checks so disabling JavaScript cannot bypass validation.
+// Array.from counts Unicode code points after trimming; PHP repeats text-length validation.
 function checkText(input) {
     const length = Array.from(input.value.trim()).length;
     const min = Number(input.getAttribute('minlength'));
@@ -120,6 +129,7 @@ document.querySelectorAll('form').forEach(function (form) {
     });
 });
 
+// Registration-only checks: matching passwords, minimum characters and maximum UTF-8 bytes.
 const registerForm = document.getElementById('register-form');
 if (registerForm) {
     function checkPasswords() {

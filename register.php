@@ -1,4 +1,11 @@
 <?php
+/*
+ * REGISTRATION PAGE
+ * GET displays a blank form. POST checks name, email, password and confirmation.
+ * User::register() hashes the password; loginMember() signs in the new account.
+ * The database UNIQUE email key backs up the duplicate-email check.
+ * Study navigation: see README.md in the repository root.
+ */
 require 'includes/functions.php';
 if (!empty($_SESSION['user_id'])) {
     redirect('index.php');
@@ -7,6 +14,7 @@ if (!empty($_SESSION['user_id'])) {
 $errors = [];
 $name = '';
 $email = '';
+// Server checks still run if someone edits the HTML or submits a request directly.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkToken();
     $name = text($_POST, 'name');
@@ -14,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = isset($_POST['password']) && is_string($_POST['password']) ? $_POST['password'] : '';
     $confirm = isset($_POST['confirm']) && is_string($_POST['confirm']) ? $_POST['confirm'] : '';
 
+// Validate the name and email, then the password character count, byte limit and confirmation.
     if (!validLength($name, 2, 60)) {
         $errors[] = 'Name must contain 2–60 characters.';
     }
@@ -27,10 +36,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Your passwords do not match.';
     }
 
+// Precheck the email for a friendly error. The UNIQUE database key also prevents races.
     $user = new User($pdo);
     if (!$errors && $user->findByEmail($email)) {
         $errors[] = 'That email is already registered.';
     }
+// Only valid submissions reach the model; registration is followed by automatic login.
     if (!$errors) {
         try {
             $newId = $user->register($name, $email, $password);
@@ -56,6 +67,7 @@ require 'includes/header.php';
     <p>Join the barangay cookbook.</p>
     <?php showErrors($errors); ?>
 
+    <!-- Browser rules and script.js give immediate feedback; register.php performs the authoritative checks. -->
     <form method="post" class="form-stack" id="register-form">
         <?= csrfField() ?>
         <label for="name">Your name</label>

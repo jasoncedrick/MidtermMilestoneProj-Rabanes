@@ -1,4 +1,11 @@
 <?php
+/*
+ * CREATE / EDIT RECIPE PAGE
+ * No id means create; an existing id means edit after checking ownership.
+ * POST values are normalized, validated in PHP, and saved only if errors is empty.
+ * The same form displays defaults, existing values, or rejected submitted values.
+ * Study navigation: see README.md in the repository root.
+ */
 require 'includes/functions.php';
 requireLogin();
 
@@ -12,6 +19,7 @@ $data = [
 ];
 $errors = [];
 
+// Edit mode: load the recipe and verify the current user owns it before showing the form.
 if ($recipeId > 0) {
     $data = $recipeModel->find($recipeId, $userId);
     if (!$data) {
@@ -23,8 +31,10 @@ if ($recipeId > 0) {
     $data['ingredients'] = $recipeModel->ingredients($recipeId);
 }
 
+// POST is a save attempt. Check CSRF before reading and validating submitted fields.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkToken();
+// ingredients[] arrives as an array. Keep empty rows so validation can report them.
     $ingredients = [];
     if (isset($_POST['ingredients']) && is_array($_POST['ingredients'])) {
         foreach ($_POST['ingredients'] as $ingredient) {
@@ -39,7 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'ingredients' => $ingredients,
         'steps' => text($_POST, 'steps')
     ];
+// Server validation is authoritative even if browser HTML/JavaScript checks are bypassed.
     $errors = validateRecipe($data, $categories);
+// Only an empty error list permits saving. Redirect prevents refresh from repeating the POST.
     if (!$errors) {
         $savedId = $recipeModel->save($data, $userId, $recipeId);
         flash($recipeId ? 'Recipe updated.' : 'Recipe shared successfully.');
@@ -55,6 +67,7 @@ require 'includes/header.php';
     <h1 id="form-title"><?= e($pageTitle) ?></h1>
     <?php showErrors($errors); ?>
 
+    <!-- HTML required/minlength/maxlength provide browser feedback. PHP repeats validation on POST. -->
     <form method="post" class="form-stack">
         <?= csrfField() ?>
         <!-- fieldset and legend: fields grouped by purpose -->
@@ -89,6 +102,7 @@ require 'includes/header.php';
         <fieldset>
             <legend>Ingredients</legend>
             <p class="hint">Include the amount, for example “2 cups rice.” Remove any empty rows.</p>
+            <!-- Each ingredients[] input becomes an array item in PHP; JavaScript adds/removes rows. -->
             <div id="ingredients">
                 <?php foreach ($data['ingredients'] ?: [''] as $index => $ingredient): ?>
                     <div class="ingredient-row">

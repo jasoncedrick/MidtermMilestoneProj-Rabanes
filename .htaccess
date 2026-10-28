@@ -1,3 +1,5 @@
+# APACHE RULES: disable directory listings and block direct access to SQL/notes/internal PHP.
+# PHP can still require the internal files locally; these rules govern HTTP requests.
 Options -Indexes
 
 # SQL and project notes are for installation, not public downloads.

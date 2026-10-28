@@ -1,3 +1,7 @@
+-- DATABASE SNAPSHOT: exported schema plus existing rows, not a clean category-only install.
+-- Contains 6 categories, 4 users, 1 recipe and 2 ingredients; no inserted comments/favorites.
+-- Existing recipe has updated_at set, so its Edited marker appears after import.
+-- Use this OR database.sql on a fresh database; importing both is not a merge workflow.
 -- phpMyAdmin SQL Dump
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
